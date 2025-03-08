@@ -1,0 +1,20 @@
+extra:
+  python:
+    source: provider/google_drive.py
+identity:
+  author: langgenius
+  description:
+    en_US: Manage Google Drive files and folders
+    zh_Hans: 管理 Google Drive 文件和文件夹
+  icon: icon.svg
+  label:
+    en_US: Google Drive
+    zh_Hans: 谷歌云端硬盘
+  name: google_drive
+  tags:
+  - utilities
+tools:
+- tools/folder_create.yaml
+- tools/folder_update.yaml
+- tools/file_create.yaml
+- tools/file_update.yaml

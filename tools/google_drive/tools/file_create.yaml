@@ -1,0 +1,73 @@
+description:
+  human:
+    en_US: Create a file in Google Drive
+    zh_Hans: 在 Google Drive 中创建文件
+  llm: Create a file in Google Drive with specified name, content, and parent folder
+extra:
+  python:
+    source: tools/file_create.py
+identity:
+  author: langgenius
+  label:
+    en_US: Create File
+    zh_Hans: 创建文件
+  name: file_create
+parameters:
+- form: llm
+  human_description:
+    en_US: Name of the file to create
+    zh_Hans: 要创建的文件名称
+  label:
+    en_US: File Name
+    zh_Hans: 文件名称
+  llm_description: Name of the file to create
+  name: name
+  required: true
+  type: string
+- form: llm
+  human_description:
+    en_US: Content of the file
+    zh_Hans: 文件内容
+  label:
+    en_US: Content
+    zh_Hans: 内容
+  llm_description: Content of the file (text or base64-encoded binary data)
+  name: content
+  required: true
+  type: string
+- form: llm
+  human_description:
+    en_US: MIME type of the file (e.g., text/plain, application/pdf, image/jpeg)
+    zh_Hans: 文件的 MIME 类型（例如，text/plain, application/pdf, image/jpeg）
+  label:
+    en_US: MIME Type
+    zh_Hans: MIME 类型
+  llm_description: MIME type of the file (e.g., text/plain, application/pdf, image/jpeg)
+  name: mime_type
+  required: false
+  default: text/plain
+  type: string
+- form: llm
+  human_description:
+    en_US: Parent folder ID where the new file will be created (use 'root' for Drive root)
+    zh_Hans: 新文件将创建在的父文件夹 ID（使用 'root' 表示 Drive 根目录）
+  label:
+    en_US: Parent Folder ID
+    zh_Hans: 父文件夹 ID
+  llm_description: Parent folder ID where the new file will be created (use 'root' for Drive root)
+  name: parent_id
+  required: false
+  default: root
+  type: string
+- form: llm
+  human_description:
+    en_US: Whether to search for the parent folder by name instead of ID
+    zh_Hans: 是否通过名称而不是 ID 搜索父文件夹
+  label:
+    en_US: Search by Name
+    zh_Hans: 按名称搜索
+  llm_description: Set to true to search for the parent folder by name instead of using the ID directly
+  name: search_by_name
+  required: false
+  default: false
+  type: boolean
