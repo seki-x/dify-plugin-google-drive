@@ -29,7 +29,7 @@ credentials_for_provider:
       pt_BR: Get your credentials JSON from Google
 
 tools:
-  - tools/google_drive.yaml
+  - tools/folder_search.yaml
 extra:
   python:
     source: provider/google_drive.py

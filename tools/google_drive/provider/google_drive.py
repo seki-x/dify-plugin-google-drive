@@ -31,15 +31,11 @@ class GoogleDriveProvider(ToolProvider):
             if service_account_info.get('type') != 'service_account':
                 raise ValueError("Invalid credentials type, must be 'service_account'")
             
-            # Create credentials
-            creds = service_account.Credentials.from_service_account_info(
+            # Check credentials
+            service_account.Credentials.from_service_account_info(
                 service_account_info, 
                 scopes=['https://www.googleapis.com/auth/drive']
             )
-            
-            # # Test if credentials are valid by trying to list files
-            # service = build('drive', 'v3', credentials=creds)
-            # service.files().list(pageSize=1).execute()
-            
+
         except Exception as e:
             raise ToolProviderCredentialValidationError(f"Credential validation failed: {str(e)}")
