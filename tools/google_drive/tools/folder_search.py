@@ -16,6 +16,7 @@ class GoogleDriveFolderSearch(Tool):
         Search for folders in Google Drive
         """
         query = tool_parameters.get("query", "")
+        parent_id = tool_parameters.get("parent_id", None)
 
         if not query:
             yield self.create_text_message("Invalid parameter: search query is required")
@@ -29,7 +30,7 @@ class GoogleDriveFolderSearch(Tool):
             
         try:
             creds = self._get_credentials()
-            folders = self._search_folders(query, max_results, creds)
+            folders = self._search_folders(query, max_results, creds, parent_id)
             if not folders:
                 yield self.create_text_message(f"No folders found matching '{query}'")
                 return
@@ -47,12 +48,16 @@ class GoogleDriveFolderSearch(Tool):
         except Exception as e:
             yield self.create_text_message(f"Error searching folders: {str(e)}")
 
-    def _search_folders(self, query: str, max_results: int, credentials: Credentials) -> List[Dict[str, Any]]:
+    def _search_folders(self, query: str, max_results: int, credentials: Credentials, parent_id: str = None) -> List[Dict[str, Any]]:
         """Search for folders in Google Drive and return their details"""
         service = self._get_drive_service(credentials)
         
         # Build search query for folders containing the query string in name
         search_query = f"mimeType = 'application/vnd.google-apps.folder' and name contains '{query}' and trashed = false"
+        
+        # Add parent folder filter if provided
+        if parent_id:
+            search_query += f" and '{parent_id}' in parents"
         
         results = []
         page_token = None
