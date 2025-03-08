@@ -1,6 +1,5 @@
 from typing import Any, Generator, List, Dict
 import json
-import os
 from google.oauth2 import service_account
 from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
@@ -13,7 +12,6 @@ class GoogleDriveFolderSearch(Tool):
     def _invoke(
         self, tool_parameters: dict[str, Any]
     ) -> Generator[ToolInvokeMessage, None, None]:
-        credentials_json = self.runtime.credentials["credentials_json"]
         """
         Search for folders in Google Drive
         """
