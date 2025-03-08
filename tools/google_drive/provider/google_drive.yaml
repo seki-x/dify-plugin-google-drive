@@ -30,6 +30,7 @@ credentials_for_provider:
 
 tools:
   - tools/folder_search.yaml
+  - tools/file_search.yaml
 extra:
   python:
     source: provider/google_drive.py
