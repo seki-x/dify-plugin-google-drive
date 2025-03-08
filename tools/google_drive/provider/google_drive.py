@@ -1,16 +1,45 @@
 from typing import Any
-from dify_plugin.errors.tool import ToolProviderCredentialValidationError
+import json
+
 from dify_plugin import ToolProvider
-from tools.folder_create import GoogleDriveFolderCreate
-from tools.folder_update import GoogleDriveFolderUpdate
-from tools.file_create import GoogleDriveFileCreate
-from tools.file_update import GoogleDriveFileUpdate
+from dify_plugin.errors.tool import ToolProviderCredentialValidationError
+from google.oauth2 import service_account
+from googleapiclient.discovery import build
 
 
 class GoogleDriveProvider(ToolProvider):
     def _validate_credentials(self, credentials: dict[str, Any]) -> None:
         try:
-            # Attempt to list files to validate credentials
-            GoogleDriveFolderCreate().invoke(tool_parameters={"name": "test_folder", "parent_id": "root"})
+            credentials_json = credentials.get('credentials_json')
+            
+            if not credentials_json:
+                raise ValueError("Missing required credentials: credentials_json is required")
+            
+            # Parse the JSON credentials
+            try:
+                service_account_info = json.loads(credentials_json)
+            except json.JSONDecodeError:
+                raise ValueError("Invalid JSON format for credentials_json")
+            
+            # Validate required fields
+            required_fields = ['client_email', 'private_key', 'type']
+            missing_fields = [field for field in required_fields if field not in service_account_info]
+            if missing_fields:
+                raise ValueError(f"Missing required fields in credentials_json: {', '.join(missing_fields)}")
+            
+            # Verify it's a service account
+            if service_account_info.get('type') != 'service_account':
+                raise ValueError("Invalid credentials type, must be 'service_account'")
+            
+            # Create credentials
+            creds = service_account.Credentials.from_service_account_info(
+                service_account_info, 
+                scopes=['https://www.googleapis.com/auth/drive']
+            )
+            
+            # # Test if credentials are valid by trying to list files
+            # service = build('drive', 'v3', credentials=creds)
+            # service.files().list(pageSize=1).execute()
+            
         except Exception as e:
-            raise ToolProviderCredentialValidationError(str(e))
+            raise ToolProviderCredentialValidationError(f"Credential validation failed: {str(e)}")
