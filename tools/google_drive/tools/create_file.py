@@ -1,12 +1,8 @@
 from typing import Any, Generator
-import json
-import base64
 import requests
-from google.oauth2 import service_account
-from googleapiclient.discovery import build
-from googleapiclient.http import MediaInMemoryUpload
 from dify_plugin.entities.tool import ToolInvokeMessage
 from dify_plugin import Tool
+from drive_utils import GoogleDriveUtils
 
 
 class GoogleDriveCreateFile(Tool):
@@ -67,12 +63,14 @@ class GoogleDriveCreateFile(Tool):
             return
             
         try:
-            creds = self._get_credentials()
+            # Get credentials from the utility class
+            credentials_json = self.runtime.credentials["credentials_json"]
+            creds = GoogleDriveUtils.get_credentials(credentials_json)
             
             # Handle folder_name if provided (prioritize over parent_id)
             if folder_name:
                 print(f"Checking for folder: {folder_name}")
-                folder_id = self._find_folder_by_name(folder_name, creds, parent_id)
+                folder_id = GoogleDriveUtils.find_folder_by_name(folder_name, creds, parent_id)
                 
                 if folder_id:
                     print(f"Found existing folder: {folder_name} with ID: {folder_id}")
@@ -80,7 +78,7 @@ class GoogleDriveCreateFile(Tool):
                 else:
                     print(f"Folder not found, creating new folder: {folder_name}")
                     # Create the folder
-                    folder = self._create_folder(folder_name, parent_id, creds)
+                    folder = GoogleDriveUtils.create_folder(folder_name, parent_id, creds)
                     if folder:
                         parent_id = folder.get("id")
                         print(f"Created new folder with ID: {parent_id}")
@@ -121,8 +119,8 @@ class GoogleDriveCreateFile(Tool):
                 yield self.create_text_message(f"Error downloading file from URL: {str(e)}")
                 return
             
-            # Create the file
-            file = self._create_file(file_name, parent_id, mime_type, file_content, creds)
+            # Create the file using the utility class
+            file = GoogleDriveUtils.create_file(file_name, parent_id, mime_type, file_content, creds)
             
             result = {
                 "id": file.get("id"),
@@ -137,123 +135,7 @@ class GoogleDriveCreateFile(Tool):
             if folder_name:
                 result["folder_name"] = folder_name
                 
+            yield self.create_text_message("File created successfully")
             yield self.create_json_message(result)
         except Exception as e:
             yield self.create_text_message(f"Error creating file: {str(e)}")
-
-    def _find_folder_by_name(self, folder_name: str, credentials, parent_id: str = "root") -> str:
-        """Find a folder by name within the specified parent folder and return its ID, or empty string if not found"""
-        service = self._get_drive_service(credentials)
-        
-        # Search for the folder within the specified parent
-        query = f"mimeType = 'application/vnd.google-apps.folder' and name = '{folder_name}' and trashed = false"
-        
-        # Add parent folder constraint if specified (not root)
-        if parent_id and parent_id != "root":
-            query += f" and '{parent_id}' in parents"
-        
-        try:
-            print(f"Searching for folder with query: {query}")
-            response = service.files().list(
-                q=query,
-                spaces='drive',
-                fields='files(id, name, parents)',
-                pageSize=1
-            ).execute()
-            
-            items = response.get('files', [])
-            
-            if items:
-                return items[0]['id']
-        except Exception as e:
-            print(f"Error finding folder: {str(e)}")
-            
-        return ""
-        
-    def _create_folder(self, name: str, parent_id: str, credentials) -> dict:
-        """Create a folder in Google Drive and return its details"""
-        service = self._get_drive_service(credentials)
-        
-        # Prepare folder metadata
-        folder_metadata = {
-            'name': name,
-            'mimeType': 'application/vnd.google-apps.folder'
-        }
-        
-        # Add parent folder if specified
-        if parent_id and parent_id != "root":
-            folder_metadata['parents'] = [parent_id]
-        else:
-            folder_metadata['parents'] = ["root"]
-        
-        # Create the folder
-        try:
-            print(f"Creating folder '{name}' with parent ID: {parent_id}")
-            folder = service.files().create(
-                body=folder_metadata,
-                fields='id, name, webViewLink, parents'
-            ).execute()
-            
-            print(f"Folder created: {folder}")
-            return folder
-        except Exception as e:
-            print(f"Error creating folder: {str(e)}")
-            return None
-
-    def _create_file(self, name: str, parent_id: str, mime_type: str, content: bytes, credentials) -> dict:
-        """Create a file in Google Drive and return its details"""
-        service = self._get_drive_service(credentials)
-        
-        # Prepare file metadata
-        file_metadata = {
-            'name': name,
-            'mimeType': mime_type
-        }
-        
-        # Add parent folder if specified
-        if parent_id and parent_id != "root":
-            file_metadata['parents'] = [parent_id]
-        
-        # Create media content
-        media = MediaInMemoryUpload(content, mimetype=mime_type)
-        
-        # Create the file
-        file = service.files().create(
-            body=file_metadata,
-            media_body=media,
-            fields='id, name, mimeType, webViewLink'
-        ).execute()
-        
-        print(f"File created: {file}")
-        return file
-    
-    def _get_drive_service(self, credentials):
-        """Get authenticated Google Drive service"""
-        # Create and return the service
-        service = build('drive', 'v3', credentials=credentials)
-        return service
-    
-    def _get_credentials(self):
-        """Get Google Drive API credentials"""
-        # Get credentials from provider
-        credentials_json = self.runtime.credentials["credentials_json"]
-        
-        # Parse the JSON credentials
-        try:
-            service_account_info = json.loads(credentials_json)
-        except json.JSONDecodeError:
-            raise ValueError("Invalid JSON format for credentials_json")
-        
-        # Validate required fields
-        required_fields = ['client_email', 'private_key', 'type']
-        missing_fields = [field for field in required_fields if field not in service_account_info]
-        if missing_fields:
-            raise ValueError(f"Missing required fields in credentials_json: {', '.join(missing_fields)}")
-        
-        # Create credentials
-        creds = service_account.Credentials.from_service_account_info(
-            service_account_info, 
-            scopes=['https://www.googleapis.com/auth/drive']
-        )
-        
-        return creds
