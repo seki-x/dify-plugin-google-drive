@@ -7,7 +7,9 @@ from typing import Dict, List, Any, Optional
 
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
-from googleapiclient.http import MediaInMemoryUpload
+from googleapiclient.errors import HttpError
+from googleapiclient.http import MediaInMemoryUpload, MediaIoBaseDownload
+import io
 
 
 class GoogleDriveUtils:
@@ -243,3 +245,82 @@ class GoogleDriveUtils:
             })
             
         return results
+
+    @staticmethod
+    def download_file(file_id: str, credentials: service_account.Credentials) -> tuple[bytes, dict]:
+        """
+        Downloads a file from Google Drive.
+        For regular files, downloads the binary content directly.
+        For Google Workspace documents (Docs, Sheets, Slides), exports as PDF.
+        
+        Args:
+            file_id: ID of the file to download
+            credentials: Google service account credentials
+            
+        Returns:
+            tuple: (file_content_bytes, metadata_dict)
+        """
+        
+        try:
+            # Create drive api client
+            service = GoogleDriveUtils.get_drive_service(credentials)
+            files = service.files()
+            
+            # Get file metadata first to determine file type
+            file_info = files.get(fileId=file_id).execute()
+            original_name = file_info.get("name", "unknown")
+            original_mime_type = file_info.get("mimeType", "unknown")
+            
+            # Check if it's a Google Workspace document that needs to be exported
+            google_workspace_mimes = {
+                "application/vnd.google-apps.document",     # Google Docs
+                "application/vnd.google-apps.spreadsheet",  # Google Sheets
+                "application/vnd.google-apps.presentation", # Google Slides
+                "application/vnd.google-apps.drawing",      # Google Drawings
+                "application/vnd.google-apps.script",       # Google Apps Script
+                "application/vnd.google-apps.form"          # Google Forms
+            }
+            
+            if original_mime_type in google_workspace_mimes:
+                # Export Google Workspace document as PDF
+                print(f"Exporting Google Workspace file '{original_name}' as PDF")
+                request = files.export_media(fileId=file_id, mimeType='application/pdf')
+                
+                # Adjust metadata for exported file
+                # Remove original extension and add .pdf
+                name_without_ext = original_name.rsplit('.', 1)[0] if '.' in original_name else original_name
+                metadata = {
+                    "file_name": f"{name_without_ext}.pdf",
+                    "mime_type": "application/pdf",
+                    "original_name": original_name,
+                    "original_mime_type": original_mime_type,
+                    "exported": True
+                }
+            else:
+                # Download regular binary file
+                print(f"Downloading binary file '{original_name}'")
+                request = files.get_media(fileId=file_id)
+                metadata = {
+                    "file_name": original_name,
+                    "mime_type": original_mime_type,
+                }
+            
+            # Download the file content
+            file_bytes = io.BytesIO()
+            downloader = MediaIoBaseDownload(file_bytes, request)
+            done = False
+            while done is False:
+                _, done = downloader.next_chunk()
+                
+            return file_bytes.getvalue(), metadata
+            
+        except HttpError as error:
+            print(f"An error occurred: {error}")
+            # Handle specific error cases
+            if error.resp.status == 403:
+                print("Access denied - check file permissions")
+            elif error.resp.status == 404:
+                print("File not found")
+            elif error.resp.status == 400:
+                print("Bad request - possibly unsupported export format")
+            return None, {}

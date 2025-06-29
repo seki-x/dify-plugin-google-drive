@@ -1,4 +1,4 @@
-version: 0.0.1
+version: 0.1.0
 type: plugin
 author: yoshiki-0428
 name: google_drive
@@ -20,7 +20,7 @@ plugins:
   tools:
     - provider/google_drive.yaml
 meta:
-  version: 0.0.1
+  version: 0.1.0
   arch:
     - amd64
     - arm64

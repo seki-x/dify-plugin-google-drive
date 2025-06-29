@@ -14,6 +14,7 @@ This plugin provides a set of tools for integrating Google Drive with Dify appli
 2. **Folder Search** - Find folders in Google Drive by name
 3. **Create File** - Upload files to Google Drive
 4. **Create Folder** - Create new folders in Google Drive
+5. **File Download** - Download files from Google Drive (Google Workspace files are automatically exported to PDF before download)
 
 ## Setup
 
@@ -123,6 +124,79 @@ Output:
   "mime_type": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
   "web_view_link": "https://drive.google.com/file/d/4DeFgHiJkLmNoPqRsTuVwXyZ/view",
   "success": true
+}
+```
+
+### Download a File
+
+Use the File Download tool to download a file by its ID. Google Workspace documents (Docs, Sheets, Slides, etc.) are exported to PDF automatically.
+
+```
+Input:
+{
+  "file_id": "1AbCdEfGhIjKlMnOpQrStUvWxYz"
+}
+
+Output (binary file example):
+{
+  "text": "File 'sample.xlsx' downloaded successfully",
+  "files": [
+    {
+      "dify_model_identity": "__dify__file__",
+      "id": null,
+      "tenant_id": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
+      "type": "document",
+      "transfer_method": "tool_file",
+      "remote_url": null,
+      "related_id": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
+      "filename": "abc123def456789012345678901234567.xlsx",
+      "extension": ".xlsx",
+      "mime_type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      "size": 1291183,
+      "url": "https://upload.dify.ai/files/tools/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx.xlsx?timestamp=1234567890&nonce=abcdef1234567890abcdef1234567890&sign=ExampleSignatureHashValue123456789abcdef"
+    }
+  ],
+  "json": [
+    {
+      "exported": false,
+      "file_id": "1AbCdEfGhIjKlMnOpQrStUvWxYz",
+      "file_name": "sample.xlsx",
+      "file_size": 1291183,
+      "mime_type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    }
+  ]
+}
+
+Output (Google Doc example):
+{
+  "text": "Google Workspace file 'sample-gdoc' exported as PDF 'sample-gdoc.pdf' successfully",
+  "files": [
+    {
+      "dify_model_identity": "__dify__file__",
+      "id": null,
+      "tenant_id": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
+      "type": "document",
+      "transfer_method": "tool_file",
+      "remote_url": null,
+      "related_id": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
+      "filename": "def456abc789012345678901234567890.pdf",
+      "extension": ".pdf",
+      "mime_type": "application/pdf",
+      "size": 14687,
+      "url": "https://upload.dify.ai/files/tools/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx.pdf?timestamp=1234567891&nonce=fedcba0987654321fedcba0987654321&sign=AnotherExampleSignatureHashValue987654321abcdef"
+    }
+  ],
+  "json": [
+    {
+      "exported": true,
+      "file_id": "2BcDeFgHiJkLmNoPqRsTuVwXyZ",
+      "file_name": "sample-gdoc.pdf",
+      "file_size": 14687,
+      "mime_type": "application/pdf",
+      "original_mime_type": "application/vnd.google-apps.document",
+      "original_name": "sample-gdoc"
+    }
+  ]
 }
 ```
 
