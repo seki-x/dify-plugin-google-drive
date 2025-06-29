@@ -1,7 +1,7 @@
 # Google Drive Tools
 
 **Author:** yoshiki-0428  
-**Version:** 0.1.0
+**Version:** 0.1.0  
 **Type:** tool  
 
 ## Description
